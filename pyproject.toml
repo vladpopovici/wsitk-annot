@@ -6,11 +6,11 @@ readme = "README.md"
 authors = [
     { name = "vladpopovici", email = "popovici@bioxlab.org" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
-    "geojson>=3.1.0",
-    "shapely>=2.0.6",
-    "xmltodict>=0.14.2",
+    "geojson>=3.0.0",
+    "shapely>=2.0.0",
+    "xmltodict>=0.13.0",
 ]
 
 [build-system]
