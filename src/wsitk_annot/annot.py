@@ -7,18 +7,13 @@
 #############################################################################
 
 __author__ = "Vlad Popovici <popovici@bioxlab.org>"
-__version__ = 0.1
+__version__ = 0.2
 
 ## This module handles whole slide image annotations for own algorithms as well
 ## as several import/export formats (HistomicsTK, Hamamatsu, ASAP, etc).
 ##
-## The annotations are grouped into several structures:
-##  - layers: each layer contain a collection of annotation objects; there is
-##    at least one layer ('base_layer')
-##  - groups: within a layer, the annotation objects may be pooled into groups;
-##    there is at least one group ('no_group')
-##  - an annotation object may belong to several groups, but only to a single
-##    layer
+## The annotation objects belong to one group, at least, named "no_group".
+## Other groups may be added, and objects may belong to several groups.
 ##
 ## All annotations share the same underlying mesh (= a raster of pixels with
 ## predefined extent and fixed resolution (microns-per-pixels)).
@@ -530,9 +525,8 @@ def createEmptyAnnotationObject(annot_type: str) -> AnnotationObject:
 ##-
 class Annotation(object):
     """
-    An annotation is a list of AnnotationObjects extracted from a region of interest (ROI).
-    The coordinates are in base image coordinates (highest resolution) and relative to ROI (for
-    the annotation objects). ROI coordinates are relative to base image.
+    An annotation is a collection of AnnotationObjects represented on the same
+    coordinate system (mesh).
     """
 
     def __init__(self, name: str, image_shape: dict, mpp: float) -> None:
@@ -545,7 +539,7 @@ class Annotation(object):
         """
         self._name = name
         self._image_shape = dict(width=0, height=0)
-        self._annots = dict(base_layer=[])
+        self._annots = []
         self._mpp = mpp
 
         if 'width' not in image_shape or 'height' not in image_shape:
@@ -555,11 +549,11 @@ class Annotation(object):
 
         return
 
-    def add_annotation_object(self, a: AnnotationObject, layer: str = 'base_layer') -> None:
-        self._annots[layer].append(a)
+    def add_annotation_object(self, a: AnnotationObject) -> None:
+        self._annots.append(a)
 
-    def add_annotations(self, a: list, layer: str = 'base_layer') -> None:
-        self._annots[layer].extend(a)
+    def add_annotations(self, a: list) -> None:
+        self._annots.extend(a)
 
     def get_base_image_shape(self) -> dict:
         return self._image_shape
@@ -577,7 +571,7 @@ class Annotation(object):
     def get_resolution(self) -> float:
         return self._mpp
 
-    def resize(self, factor: float, layer: str=None) -> None:
+    def resize(self, factor: float) -> None:
         """
         Re-scales the annotations by a factor f. If the layer is None, all
         layers are rescaled, otherwise only the specified layer is rescaled.
@@ -586,14 +580,8 @@ class Annotation(object):
         self._image_shape['width'] *= factor
         self._image_shape['height'] *= factor
 
-        if layer is None:
-            for ly in self._annots:  # for all layers
-                for obj in self._annots[ly]:  # for all objects in layer
-                    obj.resize(factor)
-        else:
-            for obj in self._annots[layer]:  # for all objects in layer
-                obj.resize(factor)
-
+        for obj in self._annots:  # for all objects in layer
+            obj.resize(factor)
         return
 
     def set_resolution(self, mpp: float) -> None:
@@ -609,14 +597,10 @@ class Annotation(object):
         return
 
     def asdict(self) -> dict:
-        a = dict()
-        for ly in self._annots:
-            a[ly] = [a.asdict() for a in self._annots[ly]]
-
         d = {'name': self._name,
              'image_shape': self._image_shape,
              'mpp': self._mpp,
-             'annotations': a
+             'annotations': [a.asdict() for a in self._annots]
              }
 
         return d
@@ -627,11 +611,10 @@ class Annotation(object):
         self._mpp = d['mpp']
 
         self._annots.clear()
-        for layer in d['annotations']:
-            for a in d['annotations'][layer]:
-                obj = createEmptyAnnotationObject(a['annotation_type'])
-                obj.fromdict(a)
-                self.add_annotation_object(obj, layer)
+        for a in d['annotations']:
+            obj = createEmptyAnnotationObject(a['annotation_type'])
+            obj.fromdict(a)
+            self.add_annotation_object(obj)
 
         return
 
@@ -643,13 +626,11 @@ class Annotation(object):
         # features/annotation objects.
 
         all_annots = []
-        for ly in self._annots:
-            for a in self._annots[ly]:
-                b = a.asGeoJSON()
-                b["properties"]["layer"] = ly
-                b["properties"]["mpp"] = self._mpp
-                b["properties"]["image_shape"] = self._image_shape
-                all_annots.append(b)
+        for a in self._annots:
+            b = a.asGeoJSON()
+            b["properties"]["mpp"] = self._mpp
+            b["properties"]["image_shape"] = self._image_shape
+            all_annots.append(b)
 
         return gj.FeatureCollection(all_annots)
 
@@ -663,8 +644,7 @@ class Annotation(object):
         for a in d["features"]:
             obj = createEmptyAnnotationObject(a["geometry"]["type"])
             obj.fromGeoJSON(a)
-            layer = a["properties"]["layer"] if "properties" in a else "base_layer"
-            self.add_annotation_object(obj, layer)
+            self.add_annotation_object(obj)
             if mg is None and "properties" in a:
                 mg = a["properties"]["mpp"]
             if im_shape is None and "properties" in a:
@@ -744,7 +724,7 @@ def annotation_from_ASAP(
 ##
 ## Save annotations to Napari's CSV format.
 ##
-def annotation_to_napari(annot: Annotation, csv_file: str, resolution_mpp: float = -1.0, layer: str = 'base_layer') -> None:
+def annotation_to_napari(annot: Annotation, csv_file: str, resolution_mpp: float = -1.0) -> None:
     """Save an <Annotation> in CSV files following Napari's specifications. Note that, since Points
         require a different format from other shapes, a separate file (with suffix '_points') will
         be created for storing all points in the annotation.
@@ -770,7 +750,7 @@ def annotation_to_napari(annot: Annotation, csv_file: str, resolution_mpp: float
     shapes_lines = []
     shapes_idx = 0
 
-    for a in annot._annots[layer]:
+    for a in annot._annots:
         if a._annotation_type == "DOT":
             points_lines.append([points_idx, a.y(), a.x()])
             points_idx += 1
