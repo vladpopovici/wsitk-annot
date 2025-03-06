@@ -531,12 +531,14 @@ class Annotation(object):
         :param mpp: (float) slide resolution (microns-per-pixel) for the image
         """
         self._name = name
-        self._image_shape = dict(width=0, height=0) if image_shape is None else image_shape
+        if image_shape is None:
+            image_shape = dict(width=0, height=0)
+        else:
+            if 'width' not in image_shape or 'height' not in image_shape:
+                raise RuntimeError('Invalid shape specification (<width> or <height> key missing)')
+        self._image_shape = image_shape
         self._annots = {'base': []}
         self._mpp = mpp
-
-        if 'width' not in image_shape or 'height' not in image_shape:
-            raise RuntimeError('Invalid shape specification (<width> or <height> key missing)')
 
         self._image_shape = image_shape
 
