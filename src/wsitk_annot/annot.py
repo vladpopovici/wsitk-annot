@@ -671,28 +671,12 @@ class Annotation(object):
 
     def save(self, filename: Union[str|Path]) -> None:
         """Save the annotation into a portable and efficient format."""
-        # current implementation is based on SHELVE module
-        with shelve.open(filename, protocol=_PICKLE_PROTOCOL) as db:
-            db['name'] = self._name
-            db['image_shape'] = self._image_shape
-            db['mpp'] = self._mpp
-            for ly in self._annots:
-                db[ly] = [a.asdict() for a in self._annots[ly]]
+        # TODO: eventually use a more efficient format
+        self.save_binary(filename)
 
     def load(self, filename: Union[str|Path]) -> None:
         """Load the annotation from external file."""
-        with shelve.open(filename, protocol=_PICKLE_PROTOCOL) as db:
-            ky = db.keys()
-            self._name = db['name']
-            self._image_shape = db['image_shape']
-            self._mpp = db['mpp']
-            ky = list(set(ky) - {'name', 'image_shape', 'mpp'})
-            self._annots.clear()
-            for ly in ky:  # rest of keys are layer names
-                self._annots[ly] = []
-                for a in db[ly]:
-                    obj = createEmptyAnnotationObject(a['annotation_type'])
-                    obj.fromdict(a)
-                    self.add_annotation_object(obj, layer=ly)
-
+        # TODO: keep in sync with save()
+        self.load_binary(filename)
+        
 ##-
