@@ -457,19 +457,32 @@ class Circle(Polygon):
     def __init__(self, center: Union[list|tuple], radius: float,
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
-        alpha = np.array([k*np.pi/4 for k in range(8)])
+                 data: Optional[pd.DataFrame] = None,
+                 n_points: int = 8):
+        alpha = np.array([k*2*np.pi/n_points for k in range(n_points)])
         coords = np.vstack((
             radius * np.sin(alpha) + center[0], radius * np.cos(alpha) + center[1]
         )).transpose()
 
         super().__init__(coords.tolist(), name, group, data)
         self._annotation_type = "CIRCLE"
+        self._center = center
+        self._radius = radius
 
+    def asdict(self) -> dict:
+        """Return a dictionary representation of the object."""
+        d = super().asdict()
+        d["radius"] = self._radius
+        d["center"] = self._center
+
+        return d
+    
     def fromdict(self, d: dict) -> None:
         """Initialize the object from a dictionary."""
         super().fromdict(d)
         self._annotation_type = "CIRCLE"
+        self._center = d["center"]
+        self._radius = d["radius"]
 
         return
 
