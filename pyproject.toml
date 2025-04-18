@@ -19,3 +19,11 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "wsitk-annot",
+]
+
+[tool.uv.sources]
+wsitk-annot = { workspace = true }

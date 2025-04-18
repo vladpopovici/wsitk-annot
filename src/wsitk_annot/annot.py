@@ -12,7 +12,7 @@ __version__ = 0.2
 ## This module handles whole slide image annotations for own algorithms as well
 ## as several import/export formats (HistomicsTK, Hamamatsu, ASAP, etc).
 ##
-## The annotation objects belong to one group, at least, named "no_group".
+## The annotation objects belong to at least one group: "no_group".
 ## Other groups may be added, and objects may belong to several groups.
 ##
 ## All annotations share the same underlying mesh (= a raster of pixels with
@@ -20,6 +20,7 @@ __version__ = 0.2
 
 __all__ = ['AnnotationObject', 'Dot', 'Polygon', 'PointSet', 'Annotation', 'Circle']
 
+import io
 from abc import ABC, abstractmethod
 from typing import Union, Optional
 from pathlib import Path
@@ -31,8 +32,7 @@ import numpy as np
 import collections
 from ._serialize import pack as j_pack, unpack as j_unpack
 import pandas as pd
-from tinydb import TinyDB
-from BetterJSONStorage import BetterJSONStorage
+import orjson as json
 
 ##-
 class AnnotationObject(ABC):
@@ -196,10 +196,8 @@ class AnnotationObject(ABC):
         d = {
             "annotation_type": self._annotation_type,
             "name": self._name,
-            #"x": self.x.tolist(),
-            #"y": self.y.tolist(),
             "metadata": self._metadata,
-            "data": self._data.to_dict() if self._data is not None else [],
+            "data": self._data.to_dict('tight') if self._data is not None else [],
             "geom": shapely.to_wkt(self.geom)   # text representation of the geometry
         }
 
@@ -330,13 +328,6 @@ class PointSet(AnnotationObject):
         """Return the number of points defining the object."""
         return self.xy().shape[0]
 
-    # def fromdict(self, d: dict) -> None:
-    #     """Initialize the object from a dictionary."""
-    #     super().fromdict(d)
-    #     self._geom = shg.MultiPoint([p for p in zip(d["x"], d["y"])])
-    #
-    #     return
-
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
         if d["geometry"]["type"].lower() != "multipoint":
@@ -380,13 +371,6 @@ class PolyLine(AnnotationObject):
     def size(self) -> int:
         """Return the number of points defining the object."""
         return self.xy().shape[0]
-
-    # def fromdict(self, d: dict) -> None:
-    #     """Initialize the object from a dictionary."""
-    #     super().fromdict(d)
-    #     self._geom = shg.LineString([p for p in zip(d["x"], d["y"])])
-    #
-    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -434,13 +418,6 @@ class Polygon(AnnotationObject):
     def size(self) -> int:
         """Return the number of points defining the object."""
         return self.xy().shape[0]
-
-    # def fromdict(self, d: dict) -> None:
-    #     """Initialize the object from a dictionary."""
-    #     super().fromdict(d)
-    #     self._geom = shg.Polygon([p for p in zip(d["x"], d["y"])])
-    #
-    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -698,21 +675,19 @@ class Annotation(object):
             d = j_unpack(f)
             self.fromdict(d)
 
-    def save(self, filename: Union[str|Path]) -> None:
+    def save(self, file_obj:io.IOBase) -> None:
         """Save the annotation into a portable and efficient format."""
-        # TODO: eventually use a more efficient format
-        filename = Path(filename)
-        if filename.suffix.lower() != '.db':
-            filename = filename.with_suffix('.db')
-        with TinyDB(filename, access_mode="r+", storage=BetterJSONStorage) as db:
-            db.insert(self.asdict())
+        file_obj.write(
+            json.dumps(
+                self.asdict(),
+                option=json.OPT_NON_STR_KEYS | json.OPT_INDENT_2
+            )
+        )
 
-    def load(self, filename: Union[str|Path]) -> None:
+    def load(self, file_obj: io.IOBase) -> None:
         """Load the annotation from external file."""
-        # TODO: keep in sync with save()
-        filename = Path(filename)
-        with TinyDB(filename, access_mode="r", storage=BetterJSONStorage) as db:
-            pass
-        self.load_binary(filename)
+        self.fromdict(
+            json.loads(file_obj.read())
+        )
         
 ##-

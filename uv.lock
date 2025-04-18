@@ -1788,6 +1788,11 @@ dependencies = [
     { name = "xmltodict" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "wsitk-annot" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "geojson", specifier = ">=3.0.0" },
@@ -1797,6 +1802,9 @@ requires-dist = [
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "xmltodict", specifier = ">=0.13.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "wsitk-annot", editable = "." }]
 
 [[package]]
 name = "xmltodict"
