@@ -31,9 +31,9 @@ import numpy as np
 import collections
 from ._serialize import pack as j_pack, unpack as j_unpack
 import pandas as pd
-import shelve
+from tinydb import TinyDB
+from BetterJSONStorage import BetterJSONStorage
 
-_PICKLE_PROTOCOL = 4
 ##-
 class AnnotationObject(ABC):
     """Define the AnnotationObject minimal interface. This class is made
@@ -196,10 +196,11 @@ class AnnotationObject(ABC):
         d = {
             "annotation_type": self._annotation_type,
             "name": self._name,
-            "x": self.x,
-            "y": self.y,
+            #"x": self.x.tolist(),
+            #"y": self.y.tolist(),
             "metadata": self._metadata,
-            "data": self._data.to_dict() if self._data is not None else []
+            "data": self._data.to_dict() if self._data is not None else [],
+            "geom": shapely.to_wkt(self.geom)   # text representation of the geometry
         }
 
         return d
@@ -211,6 +212,7 @@ class AnnotationObject(ABC):
         self._name = d["name"]
         self._metadata = d["metadata"]
         self._data = pd.DataFrame(d["data"]) if isinstance(d["data"], dict) else None
+        self._geom = shapely.from_wkt(d["geom"])
 
         return
 
@@ -275,11 +277,11 @@ class Dot(AnnotationObject):
         """Return the number of points defining the object."""
         return 1
 
-    def fromdict(self, d: dict) -> None:
-        super().fromdict(d)
-        self._geom = shg.Point((d["x"], d["y"]))
-
-        return
+    # def fromdict(self, d: dict) -> None:
+    #     super().fromdict(d)
+    #     self._geom = shg.Point((d["x"], d["y"]))
+    #
+    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -328,12 +330,12 @@ class PointSet(AnnotationObject):
         """Return the number of points defining the object."""
         return self.xy().shape[0]
 
-    def fromdict(self, d: dict) -> None:
-        """Initialize the object from a dictionary."""
-        super().fromdict(d)
-        self._geom = shg.MultiPoint([p for p in zip(d["x"], d["y"])])
-
-        return
+    # def fromdict(self, d: dict) -> None:
+    #     """Initialize the object from a dictionary."""
+    #     super().fromdict(d)
+    #     self._geom = shg.MultiPoint([p for p in zip(d["x"], d["y"])])
+    #
+    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -379,12 +381,12 @@ class PolyLine(AnnotationObject):
         """Return the number of points defining the object."""
         return self.xy().shape[0]
 
-    def fromdict(self, d: dict) -> None:
-        """Initialize the object from a dictionary."""
-        super().fromdict(d)
-        self._geom = shg.LineString([p for p in zip(d["x"], d["y"])])
-
-        return
+    # def fromdict(self, d: dict) -> None:
+    #     """Initialize the object from a dictionary."""
+    #     super().fromdict(d)
+    #     self._geom = shg.LineString([p for p in zip(d["x"], d["y"])])
+    #
+    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -433,12 +435,12 @@ class Polygon(AnnotationObject):
         """Return the number of points defining the object."""
         return self.xy().shape[0]
 
-    def fromdict(self, d: dict) -> None:
-        """Initialize the object from a dictionary."""
-        super().fromdict(d)
-        self._geom = shg.Polygon([p for p in zip(d["x"], d["y"])])
-
-        return
+    # def fromdict(self, d: dict) -> None:
+    #     """Initialize the object from a dictionary."""
+    #     super().fromdict(d)
+    #     self._geom = shg.Polygon([p for p in zip(d["x"], d["y"])])
+    #
+    #     return
 
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
@@ -486,6 +488,18 @@ class Circle(Polygon):
 
         return
 
+    def asGeoJSON(self) -> dict:
+        """Return a dictionary compatible with GeoJSON specifications."""
+        return gj.Feature(geometry=shg.mapping(self.geom),
+                          properties=dict(object_type="annotation",
+                                          annotation_type=self._annotation_type,
+                                          name=self._name,
+                                          metadata=self._metadata,
+                                          data=self._data.to_dict(as_series=False) if self._data is not None else [],
+                                          radius=self._radius,
+                                          center=self._center)
+                          )
+
     def fromGeoJSON(self, d: dict) -> None:
         """Initialize the object from a dictionary compatible with GeoJSON specifications."""
         if d["geometry"]["type"].lower() != "circle":
@@ -493,6 +507,8 @@ class Circle(Polygon):
 
         super().fromGeoJSON(d)
         self._annotation_type = "CIRCLE"
+        self._center = d["properties"]["center"]
+        self._radius = d["properties"]["radius"]
 
         return
 ##-
@@ -685,11 +701,18 @@ class Annotation(object):
     def save(self, filename: Union[str|Path]) -> None:
         """Save the annotation into a portable and efficient format."""
         # TODO: eventually use a more efficient format
-        self.save_binary(filename)
+        filename = Path(filename)
+        if filename.suffix.lower() != '.db':
+            filename = filename.with_suffix('.db')
+        with TinyDB(filename, access_mode="r+", storage=BetterJSONStorage) as db:
+            db.insert(self.asdict())
 
     def load(self, filename: Union[str|Path]) -> None:
         """Load the annotation from external file."""
         # TODO: keep in sync with save()
+        filename = Path(filename)
+        with TinyDB(filename, access_mode="r", storage=BetterJSONStorage) as db:
+            pass
         self.load_binary(filename)
         
 ##-
