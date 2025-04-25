@@ -680,7 +680,7 @@ class Annotation(object):
         file_obj.write(
             json.dumps(
                 self.asdict(),
-                option=json.OPT_NON_STR_KEYS | json.OPT_INDENT_2
+                option=json.OPT_NON_STR_KEYS | json.OPT_INDENT_2 | json.OPT_SERIALIZE_NUMPY
             )
         )
 
