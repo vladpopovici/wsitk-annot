@@ -17,6 +17,9 @@ __version__ = 0.2
 ##
 ## All annotations share the same underlying mesh (= a raster of pixels with
 ## predefined extent and fixed resolution (microns-per-pixels)).
+##
+## The coordinates of the various objects (or parts of them) are specified in
+## as (X,Y) pairs (horizontal and vertical) and not in (row, column) system.
 
 __all__ = ['AnnotationObject', 'Dot', 'Polygon', 'PointSet', 'Annotation', 'Circle']
 
@@ -113,7 +116,7 @@ class AnnotationObject(ABC):
 
     def resize(self, factor: float) -> None:
         """Resize an object with the specified factor. This is equivalent to
-        scaling with the origin set to (0,0) and same factor for both x and y
+        scaling with the origin set to (0,0) and the same factor for both x and y
         coordinates.
 
         :param factor: (float) resizing factor.
@@ -445,23 +448,28 @@ class Circle(Polygon):
 
         super().__init__(coords.tolist(), name, group, data)
         self._annotation_type = "CIRCLE"
-        self._center = center
-        self._radius = radius
 
     def asdict(self) -> dict:
         """Return a dictionary representation of the object."""
         d = super().asdict()
-        d["radius"] = self._radius
-        d["center"] = self._center
+        d["radius"] = self.radius
+        d["center"] = self.center
 
         return d
-    
+
+    @property
+    def center(self):
+        return self.geom.centroid.coords
+
+    @property
+    def radius(self):
+        return shapely.minimum_bounding_radius(self.geom)
+
+
     def fromdict(self, d: dict) -> None:
         """Initialize the object from a dictionary."""
         super().fromdict(d)
         self._annotation_type = "CIRCLE"
-        self._center = d["center"]
-        self._radius = d["radius"]
 
         return
 
@@ -473,8 +481,8 @@ class Circle(Polygon):
                                           name=self._name,
                                           metadata=self._metadata,
                                           data=self._data.to_dict(as_series=False) if self._data is not None else [],
-                                          radius=self._radius,
-                                          center=self._center)
+                                          radius=self.radius,
+                                          center=self.center)
                           )
 
     def fromGeoJSON(self, d: dict) -> None:
@@ -484,8 +492,6 @@ class Circle(Polygon):
 
         super().fromGeoJSON(d)
         self._annotation_type = "CIRCLE"
-        self._center = d["properties"]["center"]
-        self._radius = d["properties"]["radius"]
 
         return
 ##-
@@ -580,15 +586,14 @@ class Annotation(object):
 
     def resize(self, factor: float) -> None:
         """
-        Re-scales the annotations by a factor f. If the layer is None, all
-        layers are rescaled, otherwise only the specified layer is rescaled.
+        Re-scales all annotations (in all layers) by a factor f.
         """
         self._mpp /= factor
         self._image_shape['width'] *= factor
         self._image_shape['height'] *= factor
 
-        for ly in self._annots:
-            for obj in self._annots[ly]:  # for all objects in layer
+        for ly in self._annots:  # for all layers
+            for obj in self._annots[ly]:  # for all objects in the current layer
                 obj.resize(factor)
         return
 
