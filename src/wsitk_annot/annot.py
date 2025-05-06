@@ -458,11 +458,11 @@ class Circle(Polygon):
         return d
 
     @property
-    def center(self):
-        return self.geom.centroid.coords
+    def center(self) -> tuple:
+        return self.x[0], self.y[0]
 
     @property
-    def radius(self):
+    def radius(self) -> float:
         return shapely.minimum_bounding_radius(self.geom)
 
 
