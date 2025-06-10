@@ -448,6 +448,8 @@ class Circle(Polygon):
 
         super().__init__(coords.tolist(), name, group, data)
         self._annotation_type = "CIRCLE"
+        self._center = center
+        self._radius = radius
 
     def asdict(self) -> dict:
         """Return a dictionary representation of the object."""
@@ -459,17 +461,19 @@ class Circle(Polygon):
 
     @property
     def center(self) -> tuple:
-        return self.x[0], self.y[0]
+        return self._center
 
     @property
     def radius(self) -> float:
-        return shapely.minimum_bounding_radius(self.geom)
+        return self._radius
 
 
     def fromdict(self, d: dict) -> None:
         """Initialize the object from a dictionary."""
         super().fromdict(d)
         self._annotation_type = "CIRCLE"
+        self._center = d['center']
+        self._radius = d['radius']
 
         return
 
@@ -492,6 +496,8 @@ class Circle(Polygon):
 
         super().fromGeoJSON(d)
         self._annotation_type = "CIRCLE"
+        self._radius = d['properties']['radius']
+        self._center = d['properties']['center']
 
         return
 ##-
