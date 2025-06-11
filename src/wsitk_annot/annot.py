@@ -435,7 +435,8 @@ class Polygon(AnnotationObject):
 
 ##
 class Circle(Polygon):
-    """Circle annotation is implemented as a polygon (octogon) to be compatible with GeoJSON specifications."""
+    """Circle annotation is implemented as a polygon (octogon) to be compatible with GeoJSON specifications.
+    The center coordinates and radius are computed properties, based on the polygon."""
     def __init__(self, center: Union[list|tuple], radius: float,
                  name: Optional[str] = None,
                  group: Optional[list] = None,
@@ -448,8 +449,6 @@ class Circle(Polygon):
 
         super().__init__(coords.tolist(), name, group, data)
         self._annotation_type = "CIRCLE"
-        self._center = center
-        self._radius = radius
 
     def asdict(self) -> dict:
         """Return a dictionary representation of the object."""
@@ -473,8 +472,6 @@ class Circle(Polygon):
         """Initialize the object from a dictionary."""
         super().fromdict(d)
         self._annotation_type = "CIRCLE"
-        self._center = d['center']
-        self._radius = d['radius']
 
         return
 
@@ -497,8 +494,6 @@ class Circle(Polygon):
 
         super().fromGeoJSON(d)
         self._annotation_type = "CIRCLE"
-        self._radius = d['properties']['radius']
-        self._center = d['properties']['center']
 
         return
 ##-
