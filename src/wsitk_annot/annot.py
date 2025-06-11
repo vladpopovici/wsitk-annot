@@ -461,11 +461,12 @@ class Circle(Polygon):
 
     @property
     def center(self) -> tuple:
-        return self._center
+        c = shapely.centroid(self._geom)
+        return c.x, c.y
 
     @property
     def radius(self) -> float:
-        return self._radius
+        return shapely.minimum_bounding_radius(self._geom)
 
 
     def fromdict(self, d: dict) -> None:
