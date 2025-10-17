@@ -46,7 +46,7 @@ class AnnotationObject(ABC):
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
+                 data: Optional[dict] = None):
         # main geometrical object describing the annotation:
 
         self._geom = shg.Point()  # some empty geometry
@@ -56,8 +56,8 @@ class AnnotationObject(ABC):
             self._metadata = {'group': group}
         else:
             self._metadata = {"group": ["no_group"]}
-        if isinstance(data, pd.DataFrame):
-            self._data = data
+        if isinstance(data, dict):
+            self._data = data.copy()
         else:
             self._data = None # None or a data frame with measurements associated with the annotation
 
@@ -71,7 +71,7 @@ class AnnotationObject(ABC):
     def data(self):
         return self._data
 
-    def set_data(self, data: Union[None, pd.DataFrame]):
+    def set_data(self, data: Union[None, dict]):
         self._data = data
 
     def __str__(self):
@@ -200,7 +200,7 @@ class AnnotationObject(ABC):
             "annotation_type": self._annotation_type,
             "name": self._name,
             "metadata": self._metadata,
-            "data": self._data.to_dict('tight') if self._data is not None else [],
+            "data": self._data if self._data is not None else [],
             "geom": shapely.to_wkt(self.geom)   # text representation of the geometry
         }
 
@@ -212,7 +212,7 @@ class AnnotationObject(ABC):
         self._annotation_type = d["annotation_type"]
         self._name = d["name"]
         self._metadata = d["metadata"]
-        self._data = pd.DataFrame(d["data"]) if isinstance(d["data"], dict) else None
+        self._data = d["data"] if isinstance(d["data"], dict) else None
         self._geom = shapely.from_wkt(d["geom"])
 
         return
@@ -224,7 +224,7 @@ class AnnotationObject(ABC):
                                           annotation_type=self._annotation_type,
                                           name=self._name,
                                           metadata=self._metadata,
-                                          data=self._data.to_dict(as_series=False) if self._data is not None else [])
+                                          data=self._data if self._data is not None else [])
                           )
 
     def fromGeoJSON(self, d: dict) -> None:
@@ -237,7 +237,7 @@ class AnnotationObject(ABC):
             self._name = d["properties"]["name"]
             self._metadata = d["properties"]["metadata"]
             if isinstance(d["properties"]["data"], dict):
-                self._data = pd.DataFrame(d["properties"]["data"])
+                self._data = d["properties"]["data"]
             else:
                 self._data = None
         except KeyError:
@@ -252,7 +252,7 @@ class Dot(AnnotationObject):
     def __init__(self, coords=(0.0, 0.0),
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
+                 data: Optional[dict] = None):
         """Initialize a DOT annotation, i.e. a single point in plane.
 
         Args:
@@ -303,7 +303,7 @@ class PointSet(AnnotationObject):
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
+                 data: Optional[dict] = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -349,7 +349,7 @@ class PolyLine(AnnotationObject):
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
+                 data: Optional[dict] = None):
         """Initialize a POLYLINE object.
 
         Args:
@@ -394,7 +394,7 @@ class Polygon(AnnotationObject):
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None):
+                 data: Optional[dict] = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -440,7 +440,7 @@ class Circle(Polygon):
     def __init__(self, center: Union[list|tuple], radius: float,
                  name: Optional[str] = None,
                  group: Optional[list] = None,
-                 data: Optional[pd.DataFrame] = None,
+                 data: Optional[dict] = None,
                  n_points: int = 8):
         alpha = np.array([k*2*np.pi/n_points for k in range(n_points)])
         coords = np.vstack((
@@ -482,7 +482,7 @@ class Circle(Polygon):
                                           annotation_type=self._annotation_type,
                                           name=self._name,
                                           metadata=self._metadata,
-                                          data=self._data.to_dict(as_series=False) if self._data is not None else [],
+                                          data=self._data if self._data is not None else [],
                                           radius=self.radius,
                                           center=self.center)
                           )

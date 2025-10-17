@@ -1,0 +1,90 @@
+{
+  "name": "wsi annot",
+  "image_shape": {
+    "width": 10,
+    "height": 15
+  },
+  "mpp": 0.25,
+  "annotations": {
+    "base": [
+      {
+        "annotation_type": "DOT",
+        "name": "DOT",
+        "metadata": {
+          "group": [
+            "no_group"
+          ]
+        },
+        "data": [],
+        "geom": "POINT (0 0)"
+      }
+    ],
+    "some layer": [
+      {
+        "annotation_type": "POINTSET",
+        "name": "POINTS",
+        "metadata": {
+          "group": [
+            "no_group"
+          ]
+        },
+        "data": [],
+        "geom": "MULTIPOINT (0 0)"
+      },
+      {
+        "annotation_type": "POLYGON",
+        "name": null,
+        "metadata": {
+          "group": [
+            "no_group"
+          ]
+        },
+        "data": [],
+        "geom": "POLYGON ((0 0, 1 1, 2 2, 0 0))"
+      },
+      {
+        "annotation_type": "CIRCLE",
+        "name": null,
+        "metadata": {
+          "group": [
+            "no_group"
+          ]
+        },
+        "data": [],
+        "geom": "POLYGON ((0 1, 0.707107 0.707107, 1 0, 0.707107 -0.707107, 0 -1, -0.707107 -0.707107, -1 0, -0.707107 0.707107, 0 1))",
+        "radius": 1.0,
+        "center": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "another layer": [
+      {
+        "annotation_type": "CIRCLE",
+        "name": null,
+        "metadata": {
+          "group": [
+            "no_group"
+          ]
+        },
+        "data": {
+          "gene": {
+            "0": "g1",
+            "1": "g2"
+          },
+          "expr": {
+            "0": 1.0,
+            "1": 2.0
+          }
+        },
+        "geom": "POLYGON ((0 3, 1.414214 2.414214, 2 1, 1.414214 -0.414214, 0 -1, -1.414214 -0.414214, -2 1, -1.414214 2.414214, 0 3))",
+        "radius": 2,
+        "center": [
+          0,
+          1
+        ]
+      }
+    ]
+  }
+}
