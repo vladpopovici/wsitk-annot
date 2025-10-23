@@ -25,7 +25,7 @@ __all__ = ['AnnotationObject', 'Dot', 'Polygon', 'PointSet', 'Annotation', 'Circ
 
 import io
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Any
 from pathlib import Path
 import shapely
 import shapely.geometry as shg
@@ -43,10 +43,10 @@ class AnnotationObject(ABC):
     abstract to force more meaningful names (e.g. Dot, Polygon, etc.) in
     subclasses."""
 
-    def __init__(self, coords: Union[list|tuple],
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None):
+    def __init__(self, coords: list[Any] | tuple[Any, ...],
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None):
         # main geometrical object describing the annotation:
 
         self._geom = shg.Point()  # some empty geometry
@@ -249,10 +249,11 @@ class AnnotationObject(ABC):
 class Dot(AnnotationObject):
     """Dot: a single position in the image."""
 
-    def __init__(self, coords=(0.0, 0.0),
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None):
+    def __init__(self, coords: list[Any] | tuple[Any, ...] = (0.0, 0.0),
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None):
+        
         """Initialize a DOT annotation, i.e. a single point in plane.
 
         Args:
@@ -294,10 +295,10 @@ class Dot(AnnotationObject):
 class PointSet(AnnotationObject):
     """PointSet: an ordered collection of points."""
 
-    def __init__(self, coords: Union[list|tuple],
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None):
+    def __init__(self, coords: list[Any] | tuple[Any, ...],
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None):        
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -340,10 +341,10 @@ class PointSet(AnnotationObject):
 class PolyLine(AnnotationObject):
     """PolyLine: polygonal line (a sequence of segments)"""
 
-    def __init__(self, coords: Union[list|tuple],
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None):
+    def __init__(self, coords: list[Any] | tuple[Any, ...],
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None):
         """Initialize a POLYLINE object.
 
         Args:
@@ -385,10 +386,10 @@ class Polygon(AnnotationObject):
     """Polygon: an ordered collection of points where the first and
     last points coincide."""
 
-    def __init__(self, coords: Union[list|tuple],
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None):
+    def __init__(self, coords: list[Any] | tuple[Any, ...],
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -431,10 +432,10 @@ class Polygon(AnnotationObject):
 class Circle(Polygon):
     """Circle annotation is implemented as a polygon (octogon) to be compatible with GeoJSON specifications.
     The center coordinates and radius are computed properties, based on the polygon."""
-    def __init__(self, center: Union[list|tuple], radius: float,
-                 name: Optional[str] = None,
-                 group: Optional[list|str] = None,
-                 data: Optional[dict|list] = None,
+    def __init__(self, center: list[Any] | tuple[Any,...], radius: float,
+                 name: str | None = None,
+                 group: list[str] | str | None = None,
+                 data: dict[Any, Any] | list[Any] | None = None,
                  n_points: int = 8):
         # radius and center are not stored, but computed from the polygon points
 
