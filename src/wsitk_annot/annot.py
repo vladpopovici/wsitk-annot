@@ -45,7 +45,7 @@ class AnnotationObject(ABC):
 
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None):
         # main geometrical object describing the annotation:
 
@@ -54,8 +54,11 @@ class AnnotationObject(ABC):
         self._annotation_type = None
         if isinstance(group, list):
             self._metadata = {'group': group}
+        elif isinstance(group, str):
+            self._metadata = {'group': [group]}
         else:
             self._metadata = {"group": ["no_group"]}
+
         if isinstance(data, dict) or isinstance(data, list):
             self._data = data
         else:
@@ -248,7 +251,7 @@ class Dot(AnnotationObject):
 
     def __init__(self, coords=(0.0, 0.0),
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None):
         """Initialize a DOT annotation, i.e. a single point in plane.
 
@@ -293,7 +296,7 @@ class PointSet(AnnotationObject):
 
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
@@ -339,7 +342,7 @@ class PolyLine(AnnotationObject):
 
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None):
         """Initialize a POLYLINE object.
 
@@ -384,7 +387,7 @@ class Polygon(AnnotationObject):
 
     def __init__(self, coords: Union[list|tuple],
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
@@ -430,7 +433,7 @@ class Circle(Polygon):
     The center coordinates and radius are computed properties, based on the polygon."""
     def __init__(self, center: Union[list|tuple], radius: float,
                  name: Optional[str] = None,
-                 group: Optional[list] = None,
+                 group: Optional[list|str] = None,
                  data: Optional[dict|list] = None,
                  n_points: int = 8):
         # radius and center are not stored, but computed from the polygon points
