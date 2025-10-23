@@ -46,12 +46,13 @@ class AnnotationObject(ABC):
     def __init__(self, coords: list[Any] | tuple[Any, ...],
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None):
+                 data: dict[Any, Any] | None = None):
         # main geometrical object describing the annotation:
 
         self._geom = shg.Point()  # some empty geometry
         self._name = name
         self._annotation_type = None
+
         if isinstance(group, list):
             self._metadata = {'group': group}
         elif isinstance(group, str):
@@ -59,10 +60,7 @@ class AnnotationObject(ABC):
         else:
             self._metadata = {"group": ["no_group"]}
 
-        if isinstance(data, dict) or isinstance(data, list):
-            self._data = data
-        else:
-            self._data = [data] 
+        self._data = data
 
         return
 
@@ -74,7 +72,7 @@ class AnnotationObject(ABC):
     def data(self):
         return self._data
 
-    def set_data(self, data: Union[None, dict]):
+    def set_data(self, data: dict[Any,Any] | None):
         self._data = data
 
     def __str__(self):
@@ -252,7 +250,7 @@ class Dot(AnnotationObject):
     def __init__(self, coords: list[Any] | tuple[Any, ...] = (0.0, 0.0),
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None):
+                 data: dict[Any, Any] | None = None):
         
         """Initialize a DOT annotation, i.e. a single point in plane.
 
@@ -298,7 +296,7 @@ class PointSet(AnnotationObject):
     def __init__(self, coords: list[Any] | tuple[Any, ...],
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None):        
+                 data: dict[Any, Any] | None = None):        
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -344,7 +342,7 @@ class PolyLine(AnnotationObject):
     def __init__(self, coords: list[Any] | tuple[Any, ...],
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None):
+                 data: dict[Any, Any] | None = None):
         """Initialize a POLYLINE object.
 
         Args:
@@ -389,7 +387,7 @@ class Polygon(AnnotationObject):
     def __init__(self, coords: list[Any] | tuple[Any, ...],
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None):
+                 data: dict[Any, Any] | None = None):
         """Initialize a POINTSET annotation, i.e. a collection
          of points in plane.
 
@@ -435,7 +433,7 @@ class Circle(Polygon):
     def __init__(self, center: list[Any] | tuple[Any,...], radius: float,
                  name: str | None = None,
                  group: list[str] | str | None = None,
-                 data: dict[Any, Any] | list[Any] | None = None,
+                 data: dict[Any, Any] | None = None,
                  n_points: int = 8):
         # radius and center are not stored, but computed from the polygon points
 
@@ -555,13 +553,13 @@ class Annotation(object):
 
         return
 
-    def add_annotation_object(self, a: AnnotationObject, layer: Optional[str] = 'base') -> None:
+    def add_annotation_object(self, a: AnnotationObject, layer: str = 'base') -> None:
         if layer in self._annots:
             self._annots[layer].append(a)
         else:
             self._annots[layer] = [a]
 
-    def add_annotations(self, a: list, layer: Optional[str] = 'base') -> None:
+    def add_annotations(self, a: list, layer: str = 'base') -> None:
         if layer in self._annots:
             self._annots[layer].extend(a)
         else:
@@ -667,12 +665,12 @@ class Annotation(object):
     #
     #     return
 
-    def save_binary(self, filename: Union[str|Path]) -> None:
+    def save_binary(self, filename: str | Path) -> None:
         """Save the annotation as nested dictionaries into a binary file."""
         with open(filename, 'wb') as f:
             j_pack(self.asdict(), f)
 
-    def load_binary(self, filename: Union[str|Path]) -> None:
+    def load_binary(self, filename: str | Path) -> None:
         """Load the annotation from a binary file."""
         self._annots.clear()
         with open(filename, 'rb') as f:
