@@ -1,6 +1,9 @@
 from pathlib import Path
 from .annot import Annotation, Dot, Polygon, PointSet, PolyLine
 import xmltodict
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
+import openslide as osl
 
 ##
 ## Save annotations to Napari's CSV format.
@@ -107,3 +110,103 @@ def annotation_from_ASAP(
 
     return wsi_annotation
 
+
+# def ndpa_read(ndpa_file, force_closed=False):
+#     """Read all annotations.
+
+#     Args:
+#         ndpa_file (str): annotation file name
+#         force_closed (bool): should polygonal lines be forced to form a closed
+#             contour (i.e. first and last points are identical)
+
+#     Returns:
+#         -a dictionary with keys corresponding to annotation object
+#         names and with values the corresponding lists of points
+
+#     See also:
+#         ndpa_read_single
+#     """
+
+
+#     xml_file = ET.parse(ndpa_file)
+#     xml_root = xml_file.getroot()
+
+#     annot = dict()
+
+#     for ann in list(xml_root):
+#         name = ann.find('title').text
+#         annot[name] = []
+
+#         p = ann.find('annotation')
+#         if p is None:
+#             continue
+
+#         p = p.find('pointlist')
+#         if p is None:
+#             continue
+
+#         coords = np.array([(np.long(pts.find('x').text), np.long(pts.find('y').text))
+#                            for pts in list(p)])
+#         if np.all(coords[0,] == coords[-1,]):
+#             # actually, it's a polygon
+#             annot[name].append(Polygon(coords, name=name))
+#         else:
+#             # it's a set of points, but may be forced to Polygon
+#             if force_closed:
+#                 coords = np.vstack((coords, coords[0,]))
+#                 annot[name].append(Polygon(coords, name=name))
+#             else:
+#                 annot[name].append(PointSet(coords, name=name))
+
+#     return annot
+# ##-
+
+# def annotation_from_NDPA(
+#         infile: Union[str|Path],
+#         wsi_extent: dict[int, int],
+#         mpp: float
+# ) -> Annotation:
+#     """
+#     Import annotations from NDPA (XML) files produced by Hammamatsu's NDP.view software.
+#     """
+#     infile = Path(infile)
+#     xml_file = ET.parse(infile)
+#     xml_root = xml_file.getroot()
+    
+#     ndpi = osl.OpenSlide(args.ndpi)
+#     x_off = int(ndpi.properties['hamamatsu.XOffsetFromSlideCentre'])
+#     y_off = int(ndpi.properties['hamamatsu.YOffsetFromSlideCentre'])
+#     x_mpp = float(ndpi.properties['openslide.mpp-x'])
+#     y_mpp = float(ndpi.properties['openslide.mpp-y'])
+#     dimX0, dimY0 = ndpi.level_dimensions[0]
+    
+    
+#     for ann in list(xml_root):
+#         name = ann.find('title').text
+#         p = ann.find('annotation')
+#         if p is None:
+#             continue
+#         p = p.find('pointlist')
+#         if p is None:
+#             continue
+        
+#         for pts in list(p):
+#             # coords in NDPI system, relative to the center of the slide
+#             x = int(pts.find('x').text)
+#             y = int(pts.find('y').text)
+            
+#             # convert the coordinates:
+#             x -= x_off                 # relative to the center of the image
+#             y -= y_off
+            
+#             x /= (1000*x_mpp)          # in pixels, relative to the center
+#             y /= (1000*y_mpp)
+            
+#             x = int(x + dimX0 / 2)    # in pixels, relative to UL corner
+#             y = int(y + dimY0 / 2)
+            
+#             # save the coordinates
+#             fout.write('\t'.join([str(int(x/d)), str(int(y/d)), '\n']))
+#             #print(int(x/d), int(y/d))
+        
+#         fout.close()
